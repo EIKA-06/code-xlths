@@ -5,8 +5,8 @@ from scipy import signal
 print('Thiết kế bộ lọc thông thấp dùng phương pháp lấy mẫu tần số')
 
 # 1. Nhập thông số bộ lọc
-M = int(input('Số mẫu (M): '))  # Số mẫu
-Wp = float(input('Tần số cắt dải truyền (rad, ví dụ 0.3*pi): ')) # Tần số cắt
+M = int(input('Số mẫu: '))  # Số mẫu
+Wp = float(input('Tần số cắt dải truyền Wp (Wp * pi): ')) # Tần số cắt
 f1 = float(input('Tần số thứ nhất (Hz): '))
 f2 = float(input('Tần số thứ hai (Hz): '))
 f3 = float(input('Tần số thứ ba (Hz): '))
@@ -78,7 +78,6 @@ plt.plot(t, sf)
 plt.title('Đồ thị miền thời gian sau khi lọc')
 plt.xlabel('Thời gian/s')
 plt.ylabel('Biên độ')
-plt.xlim(0.2, 0.25) # Zoom vào đoạn cuối giống MATLAB
 
 plt.subplot(2, 1, 2)
 Fsf = np.fft.fft(sf, 512)

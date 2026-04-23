@@ -1,54 +1,71 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
+from scipy.signal import firls, lfilter, freqz
 
-print("Thiết kế bộ lọc FIR THÔNG THẤP dùng phương pháp Bình phương tối thiểu (Least Squares)")
+print("=== FIR THÔNG THẤP - Least Squares ===")
 
-# 1. Nhập thông số bộ lọc
-fs = float(input("Tần số lấy mẫu (fs): "))
+# ====== Nhập ======
+fs = float(input("Tần số lấy mẫu: "))
 t_start = float(input("Thời gian bắt đầu: "))
 t_end = float(input("Thời gian kết thúc: "))
-f_signal = float(input("Tần số của tín hiệu sin: "))
-num_taps = int(input("Độ dài bộ lọc (số lượng mẫu - nên là số lẻ): "))
-cutoff = float(input("Tần số cắt (Hz): "))
+f_signal = float(input("Tần số tín hiệu sin: "))
+num_taps = int(input("Độ dài FIR: "))
+cutoff_norm = float(input("Tần số cắt (theo Nyquist): "))
 
-# 2. Tạo tín hiệu thời gian và tín hiệu nhiễu
+# ====== Fix num_taps ======
+if num_taps % 2 == 0:
+    num_taps += 1
+
+# ====== Tín hiệu ======
 t = np.arange(t_start, t_end, 1/fs)
-x = np.sin(2 * np.pi * f_signal * t) + 0.5 * np.random.randn(len(t))
+x = np.sin(2*np.pi*f_signal*t) + 0.5*np.random.randn(len(t))
 
-# 3. Thiết kế bộ lọc FIR Thông Thấp bằng firls
-# Tần số trong firls của scipy được chuẩn hóa theo Nyquist (fs/2)
-nyquist = fs / 2
+# ====== Thiết kế FIR ======
+nyq = fs / 2
+cutoff = cutoff_norm * nyq
 
-# Định nghĩa các dải tần số (từ 0 đến Nyquist)
-# Ví dụ: [Dải thông từ 0 đến cutoff, Dải chặn từ cutoff*1.2 đến Nyquist]
-bands = np.array([0, cutoff, cutoff * 1.2, nyquist])
-# Định nghĩa biên độ mong muốn tương ứng cho từng dải
-# Thông thấp: Dải đầu tiên biên độ 1, dải sau biên độ 0
-desired = np.array([1, 1, 0, 0])
+transition = 0.1 * nyq
+ws = cutoff + transition
 
-# Tính toán các hệ số bộ lọc b
-b = signal.firls(num_taps, bands, desired, fs=fs)
+if ws >= nyq:
+    ws = cutoff + (nyq - cutoff)*0.5
 
-# 4. Áp dụng bộ lọc cho tín hiệu
-y = signal.lfilter(b, 1, x)
+bands = [0, cutoff, ws, nyq]
+desired = [1, 1, 0, 0]
 
-# 5. Vẽ biểu đồ so sánh
-plt.figure(figsize=(12, 8))
+b = firls(num_taps, bands, desired, fs=fs)
 
-plt.subplot(2, 1, 1)
+# ====== Lọc ======
+y = lfilter(b, 1, x)
+
+# ====== Đáp ứng tần số (dB) ======
+w, H = freqz(b, worN=1024, fs=fs)
+H_dB = 20 * np.log10(np.abs(H) + 1e-6)
+
+# ====== Vẽ ======
+plt.figure(figsize=(10,8))
+
+# trước lọc
+plt.subplot(3,1,1)
 plt.plot(t, x)
-plt.title('Tín hiệu đầu vào (Sin + Nhiễu)')
-plt.xlabel('Thời gian (s)')
-plt.ylabel('Amplitude')
-plt.grid(True)
+plt.title("Tín hiệu trước lọc")
+plt.xlabel("Thời gian (s)")
+plt.grid()
 
-plt.subplot(2, 1, 2)
+# sau lọc
+plt.subplot(3,1,2)
 plt.plot(t, y, color='green')
-plt.title('Tín hiệu đầu ra sau khi lọc THÔNG THẤP (Least Squares)')
-plt.xlabel('Thời gian (s)')
-plt.ylabel('Amplitude')
-plt.grid(True)
+plt.title("Tín hiệu sau lọc")
+plt.xlabel("Thời gian (s)")
+plt.grid()
+
+# đáp ứng tần số dB
+plt.subplot(3,1,3)
+plt.plot(w, H_dB)
+plt.title("Đáp ứng tần số (dB)")
+plt.xlabel("Tần số (Hz)")
+plt.ylabel("Biên độ (dB)")
+plt.grid()
 
 plt.tight_layout()
 plt.show()
